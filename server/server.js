@@ -1,3 +1,5 @@
+const authenticateToken = require('./middleware/authMiddleware');
+
 require('dotenv').config();
 
 const bcrypt = require('bcryptjs');
@@ -18,22 +20,6 @@ app.get('/api/health', (req, res) => {
 });
 
 const pool = require('./db');
-app.get('/api/users', async (req, res) => {
-    try {
-        const result = await pool.query(
-            'SELECT id, name, email FROM users'
-        );
-
-        res.status(200).json(result.rows);
-
-    } catch (error) {
-        console.error('Database error:', error);
-
-        res.status(500).json({
-            message: 'Internal server error'
-        });
-    }
-});
 
 
 app.post('/api/auth/login', async (req, res) => {
@@ -104,38 +90,57 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 
-app.post('/api/inquiries', async (req, res) => {
+app.post('/api/inquiries', authenticateToken, async (req, res) => {
     const { customer_name, contact, subject, description } = req.body;
+
+    // Validate required fields
     if (!customer_name || !contact || !subject || !description) {
         return res.status(400).json({
             message: 'All fields are required'
         });
     }
+
     try {
         const result = await pool.query(
-            'INSERT INTO inquiries (customer_name, contact, subject, description, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [customer_name, contact, subject, description, 1]
+            `INSERT INTO inquiries
+            (customer_name, contact, subject, description, created_by)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *`,
+            [
+                customer_name,
+                contact,
+                subject,
+                description,
+                req.user.id
+            ]
         );
+
         res.status(201).json({
             message: 'Inquiry created successfully',
             inquiry: result.rows[0]
         });
+
     } catch (error) {
         console.error('Database error:', error);
+
         res.status(500).json({
             message: 'Internal server error'
         });
     }
 });
 
-app.get('/api/inquiries', async (req, res) =>{
+
+app.get('/api/inquiries', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-        'SELECT * FROM inquiries ORDER BY created_at DESC'
+            'SELECT * FROM inquiries ORDER BY created_at DESC'
         );
+
         res.status(200).json(result.rows);
+
     } catch (error) {
         console.error('Database error:', error);
+
         res.status(500).json({
             message: 'Internal server error'
         });
@@ -143,7 +148,7 @@ app.get('/api/inquiries', async (req, res) =>{
 });
 
 
-app.get('/api/inquiries/:id', async (req, res)=>{
+app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
     const id  = req.params.id;
     
     try {
