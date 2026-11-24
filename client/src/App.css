@@ -80,17 +80,19 @@ form input:focus {
 }
 
 form button,
-.topbar button {
-  padding: 13px;
+.topbar button,
+.refresh-button {
+  padding: 11px 16px;
   border: none;
   border-radius: 7px;
   background: #633b25;
   color: white;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
 }
 
-form button:disabled {
+form button:disabled,
+.refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -113,7 +115,7 @@ form button:disabled {
 
 .topbar {
   background: white;
-  padding: 18px 35px;
+  padding: 15px 35px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -124,21 +126,145 @@ form button:disabled {
   color: #633b25;
 }
 
-.welcome {
-  padding: 50px;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
-.success {
-  color: green;
+.dashboard-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 35px 25px;
+}
+
+.dashboard-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.dashboard-heading h1 {
+  margin-bottom: 8px;
+}
+
+.dashboard-heading p {
+  color: #777;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.filters input,
+.filters select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: white;
+  font-size: 14px;
+}
+
+.filters input {
+  flex: 1;
+}
+
+.inquiry-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.inquiry-card {
+  background: white;
+  padding: 22px;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.inquiry-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.inquiry-card h3 {
+  margin: 0;
+  color: #633b25;
+}
+
+.inquiry-card p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.inquiry-card .description {
+  color: #666;
+}
+
+.inquiry-card small {
+  color: #999;
+}
+
+.status {
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: bold;
+  white-space: nowrap;
 }
 
-@media (max-width: 480px) {
+.status-new {
+  background: #e8f1ff;
+  color: #245ca6;
+}
+
+.status-in-progress {
+  background: #fff1d9;
+  color: #986000;
+}
+
+.status-resolved {
+  background: #e3f5e9;
+  color: #267442;
+}
+
+.message {
+  padding: 30px;
+  text-align: center;
+  color: #777;
+  background: white;
+  border-radius: 10px;
+}
+
+@media (max-width: 600px) {
   .login-card {
     padding: 25px;
   }
 
-  .welcome {
-    padding: 25px;
+  .topbar {
+    padding: 15px;
+  }
+
+  .dashboard-content {
+    padding: 25px 15px;
+  }
+
+  .dashboard-heading {
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .user-info {
+    gap: 8px;
   }
 }
