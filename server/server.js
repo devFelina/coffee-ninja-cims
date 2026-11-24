@@ -135,6 +135,7 @@ app.post('/api/inquiries', authenticateToken, async (req, res) => {
 
 
 
+
 app.get('/api/inquiries', authenticateToken, async (req, res) => {
     const { search, status } = req.query;
 
@@ -148,8 +149,10 @@ app.get('/api/inquiries', authenticateToken, async (req, res) => {
 
     try {
         let query = 'SELECT * FROM inquiries';
-        const conditions = [];
-        const values = [];
+        
+        // Only retrieve inquiries created by the logged-in staff member.
+        const conditions = ['created_by = $1'];
+        const values = [req.user.id];
 
         if (search) {
             values.push(`%${search.trim()}%`);
@@ -165,10 +168,7 @@ app.get('/api/inquiries', authenticateToken, async (req, res) => {
             conditions.push(`status = $${values.length}`);
         }
 
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
+        query += ' WHERE ' + conditions.join(' AND ');
         query += ' ORDER BY created_at DESC';
 
         const result = await pool.query(query, values);
@@ -185,68 +185,65 @@ app.get('/api/inquiries', authenticateToken, async (req, res) => {
 });
 
 
-
 app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
-    const id  = req.params.id;
-    
+    const id = Number(req.params.id);
+
+    // Validate inquiry ID
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: 'Invalid inquiry ID' });
+    }
+
     try {
         const result = await pool.query(
-            'SELECT * FROM inquiries WHERE id = $1',
-            [id]
+            'SELECT * FROM inquiries WHERE id = $1 AND created_by = $2',
+            [id, req.user.id]
         );
+
         if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Inquiry not found'
-            });
+            return res.status(404).json({ message: 'Inquiry not found' });
         }
+
         res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error('Database error:', error);
-        res.status(500).json({
-            message: 'Internal server error'
-        });
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
 
+
+
 app.patch('/api/inquiries/:id/status', authenticateToken, async (req, res) => {
-    const { id } = req.params;
     const { status } = req.body;
+    const id = Number(req.params.id);
 
     const validStatuses = ['New', 'In Progress', 'Resolved'];
 
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: 'Invalid inquiry ID' });
+    }
+
     if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-            message: 'Invalid status'
-        });
+        return res.status(400).json({ message: 'Invalid status' });
     }
 
     try {
         const result = await pool.query(
             `UPDATE inquiries
              SET status = $1, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $2
+             WHERE id = $2 AND created_by = $3
              RETURNING *`,
-            [status, id]
+            [status, id, req.user.id]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Inquiry not found'
-            });
+            return res.status(404).json({ message: 'Inquiry not found' });
         }
 
-        res.status(200).json({
-            message: 'Inquiry status updated successfully',
-            inquiry: result.rows[0]
-        });
-
+        res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error('Database error:', error);
-
-        res.status(500).json({
-            message: 'Internal server error'
-        });
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
