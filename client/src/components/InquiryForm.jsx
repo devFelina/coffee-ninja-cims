@@ -21,14 +21,31 @@ function InquiryForm({ token, onClose, onCreated }) {
       [name]: value,
     }));
   };
-
+    
   const handleSubmit = async (event) => {
     event.preventDefault();
     setFormError('');
+
+    const trimmedData = {
+      customer_name: formData.customer_name.trim(),
+      contact: formData.contact.trim(),
+      subject: formData.subject.trim(),
+      description: formData.description.trim(),
+    };
+
+    const hasEmptyField = Object.values(trimmedData).some(
+      (value) => value.length === 0
+    );
+
+    if (hasEmptyField) {
+      setFormError('Please fill in all fields with valid information.');
+      return;
+    }
+
     setFormLoading(true);
 
     try {
-      await createInquiry(token, formData);
+      await createInquiry(token, trimmedData);
       setFormData(initialFormData);
       await onCreated();
     } catch (err) {
@@ -37,6 +54,7 @@ function InquiryForm({ token, onClose, onCreated }) {
       setFormLoading(false);
     }
   };
+
 
   const handleClose = () => {
     if (!formLoading) {
