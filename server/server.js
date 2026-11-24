@@ -170,6 +170,48 @@ app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
     }
 });
 
+
+app.patch('/api/inquiries/:id/status', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['New', 'In Progress', 'Resolved'];
+
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+            message: 'Invalid status'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE inquiries
+             SET status = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2
+             RETURNING *`,
+            [status, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: 'Inquiry not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Inquiry status updated successfully',
+            inquiry: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Database error:', error);
+
+        res.status(500).json({
+            message: 'Internal server error'
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
