@@ -130,11 +130,44 @@ app.post('/api/inquiries', authenticateToken, async (req, res) => {
 });
 
 
+
 app.get('/api/inquiries', authenticateToken, async (req, res) => {
+    const { search, status } = req.query;
+
+    const validStatuses = ['New', 'In Progress', 'Resolved'];
+
+    if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+            message: 'Invalid status filter'
+        });
+    }
+
     try {
-        const result = await pool.query(
-            'SELECT * FROM inquiries ORDER BY created_at DESC'
-        );
+        let query = 'SELECT * FROM inquiries';
+        const conditions = [];
+        const values = [];
+
+        if (search) {
+            values.push(`%${search.trim()}%`);
+
+            conditions.push(
+                `(customer_name ILIKE $${values.length}
+                OR subject ILIKE $${values.length})`
+            );
+        }
+
+        if (status) {
+            values.push(status);
+            conditions.push(`status = $${values.length}`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const result = await pool.query(query, values);
 
         res.status(200).json(result.rows);
 
@@ -146,6 +179,7 @@ app.get('/api/inquiries', authenticateToken, async (req, res) => {
         });
     }
 });
+
 
 
 app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
