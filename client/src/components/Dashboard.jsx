@@ -1,7 +1,9 @@
+
 import { useCallback, useEffect, useState } from 'react';
 
 import InquiryCard from './InquiryCard';
 import InquiryForm from './InquiryForm';
+import InquiryDetails from './InquiryDetails';
 import { getInquiries } from '../services/api';
 
 function Dashboard({ user, token, onLogout }) {
@@ -12,6 +14,8 @@ function Dashboard({ user, token, onLogout }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+  const [selectedInquiryId, setSelectedInquiryId] = useState(null);
 
   const fetchInquiries = useCallback(async () => {
     setInquiryLoading(true);
@@ -34,6 +38,18 @@ function Dashboard({ user, token, onLogout }) {
   const handleInquiryCreated = async () => {
     setShowForm(false);
     await fetchInquiries();
+  };
+
+  const handleViewInquiry = (inquiryId) => {
+    setSelectedInquiryId(inquiryId);
+  };
+
+  const handleInquiryUpdated = async () => {
+    await fetchInquiries();
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedInquiryId(null);
   };
 
   return (
@@ -80,6 +96,15 @@ function Dashboard({ user, token, onLogout }) {
           />
         )}
 
+        {selectedInquiryId !== null && (
+          <InquiryDetails
+            token={token}
+            inquiryId={selectedInquiryId}
+            onClose={handleCloseDetails}
+            onUpdated={handleInquiryUpdated}
+          />
+        )}
+
         <div className="filters">
           <input
             type="text"
@@ -108,7 +133,11 @@ function Dashboard({ user, token, onLogout }) {
         ) : (
           <div className="inquiry-list">
             {inquiries.map((inquiry) => (
-              <InquiryCard key={inquiry.id} inquiry={inquiry} />
+              <InquiryCard
+                key={inquiry.id}
+                inquiry={inquiry}
+                onView={handleViewInquiry}
+              />
             ))}
           </div>
         )}

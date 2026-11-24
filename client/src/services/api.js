@@ -62,3 +62,26 @@ export async function createInquiry(token, inquiryData) {
 
   return readResponse(response);
 }
+
+export async function getInquiryById(token, id) {
+    const response = await fetch(`${API_URL}/inquiries/${id}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    return readResponse(response);
+}
+
+export async function updateInquiryStatus(token, id, status) {
+    const response = await fetch(`${API_URL}/inquiries/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+    });
+
+    return readResponse(response);
+}

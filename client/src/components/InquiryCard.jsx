@@ -1,4 +1,4 @@
-function InquiryCard({ inquiry }) {
+function InquiryCard({ inquiry, onView }) {
   const statusClass = inquiry.status.toLowerCase().replace(' ', '-');
 
   return (
@@ -22,6 +22,17 @@ function InquiryCard({ inquiry }) {
       <p className="description">{inquiry.description}</p>
 
       <small>Inquiry #{inquiry.id}</small>
+
+    <div>
+      <button
+        className="refresh-button"
+        onClick={() => onView(inquiry.id)}
+      >
+        View Details
+      </button>
+    </div>
+
+
     </article>
   );
 }
