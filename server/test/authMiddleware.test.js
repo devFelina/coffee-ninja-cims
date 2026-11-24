@@ -40,6 +40,30 @@ function runMiddleware(token) {
     });
 }
 
+function runMiddlewareWithHeader(authorization) {
+    return new Promise((resolve) => {
+        const req = {
+            headers: { authorization }
+        };
+
+        let statusCode;
+
+        const res = {
+            status(code) {
+                statusCode = code;
+                return this;
+            },
+            json(body) {
+                resolve({ statusCode, body });
+            }
+        };
+
+        authenticateToken(req, res, () => {
+            resolve({ nextCalled: true, req });
+        });
+    });
+}
+
 test('rejects requests without an access token', async () => {
     const result = await runMiddleware();
 
@@ -67,3 +91,31 @@ test('allows requests with a valid access token', async () => {
     assert.equal(result.req.user.id, 7);
     assert.equal(result.req.user.email, 'test@example.com');
 });
+
+
+test('rejects expired access tokens', async () => {
+    const token = jwt.sign(
+        { id: 7, email: 'test@example.com' },
+        process.env.JWT_SECRET,
+        { expiresIn: -1 }
+    );
+
+    const result = await runMiddleware(token);
+
+    assert.equal(result.statusCode, 403);
+    assert.equal(result.body.message, 'Invalid or expired token');
+});
+
+test('rejects authorization headers using the wrong scheme', async () => {
+    const token = jwt.sign(
+        { id: 7, email: 'test@example.com' },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+
+    const result = await runMiddlewareWithHeader(`Basic ${token}`);
+
+    assert.equal(result.statusCode, 401);
+    assert.equal(result.body.message, 'Access token required');
+});
+

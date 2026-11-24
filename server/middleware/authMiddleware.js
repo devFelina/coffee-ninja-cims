@@ -4,9 +4,11 @@ const jwt = require('jsonwebtoken');
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
 
-    const token = authHeader && authHeader.split(' ')[1];
+    const [scheme, token] = authHeader
+        ? authHeader.split(' ')
+        : [];
 
-    if (!token) {
+    if (scheme !== 'Bearer' || !token) {
         return res.status(401).json({
             message: 'Access token required'
         });
