@@ -95,12 +95,47 @@ app.post('/api/auth/login', async (req, res) => {
 
 
 app.post('/api/inquiries', authenticateToken, async (req, res) => {
-    const { customer_name, contact, subject, description } = req.body;
+    const { customer_name, contact, subject, description } = req.body || {};
 
-    // Validate required fields
-    if (!customer_name || !contact || !subject || !description) {
+    // Check that all fields are strings
+    const fields = { customer_name, contact, subject, description };
+
+    for (const [field, value] of Object.entries(fields)) {
+        if (typeof value !== 'string' || value.trim() === '') {
+            return res.status(400).json({
+                message: `${field} is required and must be valid text`
+            });
+        }
+    }
+
+    // Remove unnecessary spaces
+    const customerName = customer_name.trim();
+    const contactMethod = contact.trim();
+    const inquirySubject = subject.trim();
+    const inquiryDescription = description.trim();
+
+    // Check maximum lengths
+    if (customerName.length > 100) {
         return res.status(400).json({
-            message: 'All fields are required'
+            message: 'Customer name cannot exceed 100 characters'
+        });
+    }
+
+    if (contactMethod.length > 30) {
+        return res.status(400).json({
+            message: 'Contact method cannot exceed 30 characters'
+        });
+    }
+
+    if (inquirySubject.length > 150) {
+        return res.status(400).json({
+            message: 'Subject cannot exceed 150 characters'
+        });
+    }
+
+    if (inquiryDescription.length > 2000) {
+        return res.status(400).json({
+            message: 'Description cannot exceed 2000 characters'
         });
     }
 
@@ -111,30 +146,21 @@ app.post('/api/inquiries', authenticateToken, async (req, res) => {
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *`,
             [
-                customer_name,
-                contact,
-                subject,
-                description,
+                customerName,
+                contactMethod,
+                inquirySubject,
+                inquiryDescription,
                 req.user.id
             ]
         );
 
-        res.status(201).json({
-            message: 'Inquiry created successfully',
-            inquiry: result.rows[0]
-        });
+        res.status(201).json(result.rows[0]);
 
     } catch (error) {
         console.error('Database error:', error);
-
-        res.status(500).json({
-            message: 'Internal server error'
-        });
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
-
-
-
 
 app.get('/api/inquiries', authenticateToken, async (req, res) => {
     const { search, status } = req.query;
