@@ -27,12 +27,25 @@ const pool = require('./db');
 
 
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
+    const { email, password } = req.body || {};
+
+    if (
+        typeof email !== 'string' ||
+        typeof password !== 'string' ||
+        email.trim() === '' ||
+        password === ''
+    ) {
         return res.status(400).json({
             message: 'Email and password are required'
+        });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (normalizedEmail.length > 150) {
+        return res.status(400).json({
+            message: 'Invalid email address'
         });
     }
 
@@ -40,7 +53,7 @@ app.post('/api/auth/login', async (req, res) => {
         // Find staff account
         const result = await pool.query(
             'SELECT id, name, email, password_hash FROM users WHERE email = $1',
-            [email]
+            [normalizedEmail]
         );
 
         if (result.rows.length === 0) {
@@ -240,17 +253,27 @@ app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
 
 
 app.patch('/api/inquiries/:id/status', authenticateToken, async (req, res) => {
-    const { status } = req.body;
+
+    const { status } = req.body || {};
     const id = Number(req.params.id);
 
     const validStatuses = ['New', 'In Progress', 'Resolved'];
 
+    // Validate inquiry ID
     if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ message: 'Invalid inquiry ID' });
+        return res.status(400).json({
+            message: 'Invalid inquiry ID'
+        });
     }
 
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: 'Invalid status' });
+    // Validate status
+    if (
+        typeof status !== 'string' ||
+        !validStatuses.includes(status)
+    ) {
+        return res.status(400).json({
+            message: 'Invalid status'
+        });
     }
 
     try {
