@@ -1,17 +1,21 @@
-const authenticateToken = require('./middleware/authMiddleware');
-
 require('dotenv').config();
 
+const express = require('express');
+const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const express = require('express');
+const authenticateToken = require('./middleware/authMiddleware');
 
 const app = express();
-
 const PORT = 5005;
 
 app.use(express.json());
+
+app.use(cors({
+    origin: 'http://localhost:5173'
+}));
+
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({
