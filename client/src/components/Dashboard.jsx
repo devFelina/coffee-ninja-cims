@@ -128,7 +128,7 @@ function Dashboard({ user, token, onLogout }) {
 
         {inquiryLoading ? (
           <p className="message">Loading inquiries...</p>
-        ) : inquiries.length === 0 ? (
+        ) : inquiryError ? null : inquiries.length === 0 ? (
           <p className="message">No inquiries found.</p>
         ) : (
           <div className="inquiry-list">
