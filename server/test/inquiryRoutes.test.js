@@ -139,3 +139,51 @@ test('rejects an invalid inquiry status', async () => {
     assert.equal(response.body.message, 'Invalid status');
     assert.equal(databaseCalled, false);
 });
+
+test('rejects an invalid inquiry ID', async () => {
+    let databaseCalled = false;
+
+    const database = async () => {
+        databaseCalled = true;
+        return { rows: [] };
+    };
+
+    const response = await request(createTestApp(database))
+        .get('/api/inquiries/abc')
+        .set('Authorization', `Bearer ${createToken(7)}`);
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, 'Invalid inquiry ID');
+    assert.equal(databaseCalled, false);
+});
+
+test('rejects unauthenticated inquiry requests', async () => {
+    let databaseCalled = false;
+
+    const database = async () => {
+        databaseCalled = true;
+        return { rows: [] };
+    };
+
+    const response = await request(createTestApp(database))
+        .get('/api/inquiries');
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, 'Access token required');
+    assert.equal(databaseCalled, false);
+});
+
+test('returns 404 when an inquiry does not exist', async () => {
+    const database = async (sql, values) => {
+        assert.match(sql, /id = \$1 AND created_by = \$2/);
+        assert.deepEqual(values, [999, 7]);
+        return { rows: [] };
+    };
+
+    const response = await request(createTestApp(database))
+        .get('/api/inquiries/999')
+        .set('Authorization', `Bearer ${createToken(7)}`);
+
+    assert.equal(response.status, 404);
+    assert.equal(response.body.message, 'Inquiry not found');
+});
