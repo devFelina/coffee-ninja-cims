@@ -7,14 +7,18 @@ const jwt = require('jsonwebtoken');
 
 const authenticateToken = require('./middleware/authMiddleware');
 
-const app = express();
-const PORT = 5005;
+const pool = require('./db');
 
-app.use(express.json());
 
-app.use(cors({
-    origin: 'http://localhost:5173'
-}));
+function createApp(database = pool) {
+    const app = express();
+    const PORT = 5005;
+
+    app.use(express.json());
+
+    app.use(cors({
+        origin: 'http://localhost:5173'
+    }));
 
 
 app.get('/api/health', (req, res) => {
@@ -23,7 +27,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-const pool = require('./db');
+
 
 
 app.post('/api/auth/login', async (req, res) => {
@@ -51,7 +55,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     try {
         // Find staff account
-        const result = await pool.query(
+        const result = await database.query(
             'SELECT id, name, email, password_hash FROM users WHERE email = $1',
             [normalizedEmail]
         );
@@ -153,7 +157,7 @@ app.post('/api/inquiries', authenticateToken, async (req, res) => {
     }
 
     try {
-        const result = await pool.query(
+        const result = await database.query(
             `INSERT INTO inquiries
             (customer_name, contact, subject, description, created_by)
             VALUES ($1, $2, $3, $4, $5)
@@ -210,7 +214,7 @@ app.get('/api/inquiries', authenticateToken, async (req, res) => {
         query += ' WHERE ' + conditions.join(' AND ');
         query += ' ORDER BY created_at DESC';
 
-        const result = await pool.query(query, values);
+        const result = await database.query(query, values);
 
         res.status(200).json(result.rows);
 
@@ -233,7 +237,7 @@ app.get('/api/inquiries/:id', authenticateToken, async (req, res) => {
     }
 
     try {
-        const result = await pool.query(
+        const result = await database.query(
             'SELECT * FROM inquiries WHERE id = $1 AND created_by = $2',
             [id, req.user.id]
         );
@@ -277,7 +281,7 @@ app.patch('/api/inquiries/:id/status', authenticateToken, async (req, res) => {
     }
 
     try {
-        const result = await pool.query(
+        const result = await database.query(
             `UPDATE inquiries
              SET status = $1, updated_at = CURRENT_TIMESTAMP
              WHERE id = $2 AND created_by = $3
@@ -296,7 +300,16 @@ app.patch('/api/inquiries/:id/status', authenticateToken, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+    return app;
+}
+
+const app = createApp();
+
+if (require.main === module) {
+    app.listen(5005, () => {
+        console.log('Server running on port 5005');
+    });
+}
+
+module.exports = { createApp };
 
